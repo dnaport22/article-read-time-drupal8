@@ -7,6 +7,9 @@ Calculation is fairly simple: <br>
 Since average words per minute = 225wmp<br>
 article read time for words = 225/number of words in the post/article<br>
 article read time for an image = number of images * 12<br>
-overall artical read time = article read time for words + article read time for an image
+overall artical read time = article read time for words + article read time for an image<br>
+
+##Test Image
+---
 
 ![alt text](https://github.com/dnaport22/article-read-time-drupal8/blob/master/test.png "Article read time test")
