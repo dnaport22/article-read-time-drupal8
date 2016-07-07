@@ -1,0 +1,120 @@
+<?php
+/**
+ * @file
+ * This module displays the time it will take to read content on your site.
+ */
+
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
+use Drupal\node\Entity\Node;
+use Drupal\Core\StringTranslation\TranslationInterface;
+use Drupal\Core\StringTranslation\StringTranslationTrait;
+use Drupal\Core\Form\FormStateInterface;
+
+/**
+ * Implements hook_field_extra_fields().
+ */
+function art_field_extra_fields(){
+  foreach (\Drupal::entityManager()->getBundleInfo('node') as $bundle => $bundle_info) {
+    $extra['node'][$bundle]['display'] = array(
+      'art' => array(
+        'label' => t('Article read time'),
+        'description' => t('Approx read time for an article.'),
+        'weight' => 0,
+      ),
+    );
+  }
+  return $extra;
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter() for node_type_form.
+ */
+function art_form_node_type_form_alter(&$form, FormStateInterface $form_state, $form_id) {
+  $type = $form['#node_type'];
+  $defaults = art_defaults();
+  $form['art'] = array(
+    '#type' => 'details',
+    '#title' => t('Article read time'),
+    '#group' => 'additional_settings',
+  );
+  $form['art']['art_wpm'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Words per minute'),
+    '#description' => t('Average reading speed used for the calculation.'),
+    '#size' => 3,
+    '#maxlength' => 3,
+    '#element_validate' => array('element_validate_integer_positive'),
+    '#default_value' => \Drupal::state()->get('art_wpm_' . $type->type, $defaults['wpm']),
+  );
+}
+
+/**
+ * Implements hook_node_view().
+ */
+function art_node_view(array &$build, EntityInterface $node, EntityViewDisplayInterface $display, $view_mode) {
+  // Getting article read time.
+  $art = art_calculate($node);
+
+  //Display article read time.
+  $build['art'] = array(
+    '#markup' => '<h5><b>Read time: ' . $art . '</b></h6>',
+    '#weight' => -1,
+  );
+}
+
+/**
+ * Calculation of article read time.
+ */
+function art_calculate($node) {
+  $defaults = art_defaults();
+
+  //Getting required variables for calculation.
+  $wpm = \Drupal::state()->get('art_wpm_', $defaults['wpm']);
+  $image_time = \Drupal::state()->get('art_ipa_', $defaults['ipa']);
+  $img_count = count($node->field_image);
+  $title = $node->get('title')->value;
+  $body = $node->get('body')->value;
+
+  //Preparing data for calculation.
+  $body_text = strip_tags($body);
+  $body_word_count = str_word_count($body_text);
+  $title_text = strip_tags($title);
+  $title_word_count = str_word_count($title_text);
+
+  //Performing calculations to find read time per article.
+  $check_a = $body_word_count + $title_word_count;
+  $check_b = $img_count * $image_time;
+  $check_c = $check_a / $wpm + $check_b;
+
+  //Applying time format to calculated time.
+  $hour_suffix = 'hr';
+  $min_suffix = 'min';
+  $hrs = floor($check_c/60);
+  $mins = ceil(fmod($check_c, 60));
+
+  //Applying Drupal translations.
+  $minute_format = \Drupal::translation()->formatPlural($mins, '1 ' . $min_suffix, '@count ' . $min_suffix . 's');
+  if (!empty($hours)) {
+    $hour_format = \Drupal::translation()->formatPlural($hrs, '1 ' . $hour_suffix, '@count ' . $hour_suffix . 's');
+    $art = format_string('@h, @m', array('@h' => $hour_format, '@m' => $minute_format));
+  }
+  else {
+    $art = $minute_format;
+  }
+  return $art;
+}
+
+/**
+ * Store default settings.
+ */
+function art_defaults() {
+  return array(
+    'fields' => array('body'),
+    'wpm' => '225',
+    'ipa' => '12',
+  );
+}
+
+
+

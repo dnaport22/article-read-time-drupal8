@@ -1,0 +1,6 @@
+name: Article Read Time
+description: "Displays the time it will take to read an article on your site"
+type: module
+project: Barbican
+version: 1.0
+core: '8.x'
