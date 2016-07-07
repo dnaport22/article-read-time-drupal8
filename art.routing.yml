@@ -1,0 +1,7 @@
+art_settings:
+  path: '/test'
+  defaults:
+    _controller: 'Drupal\art\Controller\art_controller::content'
+    _title: 'read Time'
+  requirements:
+    _permission: 'access content'
